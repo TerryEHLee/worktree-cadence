@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>            <string>com.wtx.mirror-sync</string>
+  <!-- 30분마다 메인 체크아웃을 origin/<BASE> 참조 미러로 유지 (merge --ff-only).
+       갈라져 있으면 아무것도 안 건드리고 실패만 남긴다. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__WTX_HOME__/scripts/mirror-main-checkout.sh</string>
+    <string>--quiet</string>
+  </array>
+  <key>StartInterval</key>    <integer>1800</integer>
+  <key>RunAtLoad</key>        <true/>
+  <key>StandardOutPath</key>  <string>__LOG_DIR__/mirror-sync.log</string>
+  <key>StandardErrorPath</key><string>__LOG_DIR__/mirror-sync.log</string>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+</dict>
+</plist>

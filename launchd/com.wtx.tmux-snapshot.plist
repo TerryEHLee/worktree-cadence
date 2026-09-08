@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>            <string>com.wtx.tmux-snapshot</string>
+  <!-- 10분마다 tmux 배치 + pane 별 Claude 대화 ID 스냅샷.
+       재부팅 직전 wtx-save 를 잊어도 최대 10분 전 상태로 복원된다. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__WTX_HOME__/tmux/session-snapshot.sh</string>
+  </array>
+  <key>StartInterval</key>    <integer>600</integer>
+  <key>RunAtLoad</key>        <false/>
+  <key>Nice</key>             <integer>10</integer>
+  <key>StandardErrorPath</key><string>__LOG_DIR__/tmux-snapshot.err.log</string>
+</dict>
+</plist>

@@ -1,0 +1,23 @@
+{
+  "//": "~/.claude/settings.json 의 hooks 에 병합할 스니펫. __WTX_HOME__ 은 setup.sh 가 치환.",
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [
+        { "type": "command", "command": "bash \"__WTX_HOME__/scripts/sync-on-event.sh\"" },
+        { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" run" }
+      ] }
+    ],
+    "PreToolUse": [
+      { "hooks": [ { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" run" } ] },
+      { "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [ { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tool-lock-guard.sh\"" } ] }
+    ],
+    "Notification":     [ { "hooks": [ { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" wait" } ] } ],
+    "PermissionRequest":[ { "hooks": [ { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" wait" } ] } ],
+    "Stop":             [ { "hooks": [ { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" mark" } ] } ],
+    "SessionStart":     [ { "hooks": [
+        { "type": "command", "command": "bash \"__WTX_HOME__/scripts/sync-on-event.sh\"" },
+        { "type": "command", "command": "bash \"__WTX_HOME__/scripts/tmux-claude-badge.sh\" idle" }
+    ] } ]
+  }
+}
