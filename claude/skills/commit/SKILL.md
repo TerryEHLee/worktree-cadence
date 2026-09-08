@@ -132,12 +132,12 @@ allowed-tools: Read, Bash, AskUserQuestion
 3. **운영 중 버그면** `hotfix` (경로와 무관하게 우선)
 
 여러 축에 걸치면 **주 무대 + 이슈 category** 로 하나만 고른다.
-(예: 회원 화면 11파일 + admin 3파일 동시 수정이지만 category=hotfix → `hotfix`)
+(예: 유저 화면 11파일 + admin 3파일 동시 수정이지만 category=hotfix → `hotfix`)
 
 예시:
-- `ISS-241/api/member-info-update` (이슈 있음, API 라우트 변경)
-- `ISS-103/user/schedule-confirm` (이슈 있음, 회원 화면)
-- `ISS-426/hotfix/rich-text-body-class-sot` (이슈 있음, 운영 중 표시 버그)
+- `ISS-241/api/profile-update` (이슈 있음, API 라우트 변경)
+- `ISS-103/user/schedule-confirm` (이슈 있음, 유저 화면)
+- `ISS-426/hotfix/rich-text-render` (이슈 있음, 운영 중 표시 버그)
 - `CHORE/infra/husky-and-commit-skill` (이슈 없음, CHORE 가 첫 component)
 - `REFACTOR/admin/team-management-naming` (이슈 없음, REFACTOR 가 첫 component)
 
@@ -173,7 +173,7 @@ git add <file1> <file2> ...   # 절대 -A / . 금지
 
 ### 6-2: 메시지 작성 — Write tool + `git commit -F` (CRITICAL)
 
-🚫 **`git commit -m "$(cat <<'EOF' ... EOF)"` 패턴 금지** — Bash tool 의 command 직렬화 단계에서 HEREDOC 의 줄바꿈이 손실되어 메시지 전체가 한 줄로 박히는 사고가 실제 발생 (예: ISS-176 c785af31). subject 한 줄에 본문이 통째로 들어가고 body 가 빈 값이 되어, `git log --pretty=%s/%b`, PR title, dev/staging 머지 commit 까지 모두 long-line 으로 오염됨.
+🚫 **`git commit -m "$(cat <<'EOF' ... EOF)"` 패턴 금지** — Bash tool 의 command 직렬화 단계에서 HEREDOC 의 줄바꿈이 손실되어 메시지 전체가 한 줄로 박히는 사고가 실제 발생 (실사고 — 2026-04). subject 한 줄에 본문이 통째로 들어가고 body 가 빈 값이 되어, `git log --pretty=%s/%b`, PR title, dev/staging 머지 commit 까지 모두 long-line 으로 오염됨.
 
 ✅ **권장 패턴**: Write tool 로 메시지 파일을 만들고 `git commit -F` 로 전달. JSON content 안의 `\n` 은 도구 직렬화 경계에서 안전하게 보존됨.
 
@@ -367,4 +367,4 @@ git status
 - 🚫 이슈 브랜치 → 트렁크 머지백 (구 흐름) — 트렁크에 이미 STEP 6 commit 있으므로 불필요
 - 🚫 PR 생성 (별도 스킬)
 - 🚫 Claude/AI 언급, ⏺ 기호, 한 줄 뭉치기
-- 🚫 `git commit -m "$(cat <<'EOF' ... EOF)"` HEREDOC 패턴 — 도구 직렬화 단계에서 줄바꿈 손실 사고 발생 (ISS-176 c785af31). STEP 6-2 의 `Write tool + git commit -F` 패턴 사용
+- 🚫 `git commit -m "$(cat <<'EOF' ... EOF)"` HEREDOC 패턴 — 도구 직렬화 단계에서 줄바꿈 손실 사고 발생 (실사고 2026-04). STEP 6-2 의 `Write tool + git commit -F` 패턴 사용

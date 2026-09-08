@@ -108,8 +108,8 @@ git log --format="%s%n%b" dev..HEAD
   [FIX]{admin/consultations}: validateRequest 인증 로직 수정
 
 업데이트 내용:
-  [관리자] 상담 관리
-    • 상담 페이지 로그인 인증 오류 수정
+  [관리자] <섹션명>
+    • <수정 요약 예시>
 ```
 
 ```

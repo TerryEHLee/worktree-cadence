@@ -43,7 +43,7 @@ NOW=$(date "+%Y-%m-%d %H:%M:%S")
 
 ### 하면 안 되는 것
 
-`git log <트렁크> --since=...` 로 귀속하지 말 것. `push` 스킬이 매 push 마다 `rebase --autostash origin/dev` 를 돌리므로 **머지된 커밋 1개가 동일 SHA 로 전 트렁크에 복제된다.** ISS-437 커밋 하나가 gabriel·manna·michael·raphael·uriel 5곳에 똑같이 잡히는 식이다. committer date 비교도 소용없다 — 복제본은 SHA 가 같아 date 도 같다.
+`git log <트렁크> --since=...` 로 귀속하지 말 것. `push` 스킬이 매 push 마다 `rebase --autostash origin/dev` 를 돌리므로 **머지된 커밋 1개가 동일 SHA 로 전 트렁크에 복제된다.** 한 커밋이 트렁크 5곳에 똑같이 잡히는 식이다. committer date 비교도 소용없다 — 복제본은 SHA 가 같아 date 도 같다.
 
 ### 해야 하는 것 — 브랜치 reflog 의 `commit:` 항목
 
@@ -72,7 +72,7 @@ reflog 에 전혀 안 잡히는 커밋은 다른 사람 것이거나 다른 머�
 `origin/dev` 로 동료(예: `<리뷰어>`) 커밋이 트렁크에 유입된다. 리포트는 **폐하 본인 작업**이므로 반드시 걸러낸다.
 
 ```bash
-git log ... --author="terryehlee@gmail.com"
+git log ... --author="<본인 git 이메일>"
 # 또는 수집 후 검증: git log -1 --pretty="%an" <SHA>
 ```
 
@@ -125,12 +125,12 @@ git merge-base --is-ancestor <SHA> origin/dev && echo 완료 || echo 진행중
 
 ```bash
 DBURL=$(grep -m1 '^<DB_URL 환경변수(_UNPOOLED)>=' <앱>/.env | cut -d= -f2- | tr -d '"')
-psql "$DBURL" -At -F' | ' -c "select issue_no, title, status, stage from issues where issue_no in ('ISS-430','ISS-437');"
+psql "$DBURL" -At -F' | ' -c "select issue_no, title, status, stage from issues where issue_no in ('ISS-101','ISS-102');"
 ```
 
 - **pooled `<DB_URL 환경변수>` 금지** — URL 의 `pgbouncer` 파라미터를 psql 이 거부한다. 반드시 `_UNPOOLED`.
 - 테이블명은 `issues` (Prisma 모델명 `Issue` 아님).
-- 링크: `https://<이슈트래커>/issues/ISS-430`
+- 링크: `https://<이슈트래커>/issues/ISS-101`
 - 제목은 DB 값을 쓴다. 커밋 subject 로 추측하지 않는다. ISS 번호 없는 커밋은 링크 없이.
 
 ---
@@ -195,7 +195,7 @@ mcp__claude_ai_Slack__slack_send_message_draft
 
 - **변경 규모(N files, +X/−Y)는 남긴다** — 진척 감각을 주는 유일한 수치다.
 - 위험도·리스크 평가 금지 규칙은 여기서도 그대로다.
-- Slack 서식: 마크다운 헤더(`#`)는 렌더링이 나쁘다. `*굵게*` 줄 + `━━━` 구분선 + `•` 불릿을 쓴다. 링크는 `[ISS-430](https://<이슈트래커>/issues/ISS-430)` 형식이 그대로 먹는다.
+- Slack 서식: 마크다운 헤더(`#`)는 렌더링이 나쁘다. `*굵게*` 줄 + `━━━` 구분선 + `•` 불릿을 쓴다. 링크는 `[ISS-430](https://<이슈트래커>/issues/ISS-101)` 형식이 그대로 먹는다.
 - 첫 줄 인사 + 끝 줄 마무리를 붙인다. QA 요청은 **명시 지시가 있을 때만** 넣는다.
 
 ---
