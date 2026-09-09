@@ -28,8 +28,9 @@ build_window() {  # $1=윈도우명, 이후=cwd 목록(절대경로)
 #  명령을 pane 생성 인자로 직접 주면 경합 자체가 사라진다)
 build_from_snapshot() {
   [ -f "$SNAP" ] || return 1
-  local _tag widx wname pidx cwd sid running prev_win="" made=0 n_res=0 n_new=0 cmd full
-  while IFS=$'\t' read -r _tag widx wname pidx cwd sid running; do
+  local _tag widx wname pidx cwd sid running pname prev_win="" made=0 n_res=0 n_new=0 cmd full pid
+  # 8번째 열 pname(@pname, Ctrl+a n 으로 붙인 pane 이름) 은 v3 스냅샷부터. 구 스냅샷은 빈 값.
+  while IFS=$'\t' read -r _tag widx wname pidx cwd sid running pname; do
     cmd=""
     if [ "${WTX_NO_CLAUDE:-0}" != "1" ]; then
       if [ "$sid" != "-" ]; then cmd="claude --resume $sid"; n_res=$((n_res+1))
@@ -37,10 +38,12 @@ build_from_snapshot() {
     fi
     full=""; [ -n "$cmd" ] && full="$cmd; exec \$SHELL -l"
     if [ "$wname" != "$prev_win" ]; then
-      tmux new-window   -t "${SESSION}:" -n "$wname" -c "$cwd" ${full:+"$full"}; prev_win="$wname"
+      pid=$(tmux new-window   -P -F '#{pane_id}' -t "${SESSION}:" -n "$wname" -c "$cwd" ${full:+"$full"}); prev_win="$wname"
     else
-      tmux split-window -h -t "${SESSION}:${wname}" -c "$cwd" ${full:+"$full"}
+      pid=$(tmux split-window -P -F '#{pane_id}' -h -t "${SESSION}:${wname}" -c "$cwd" ${full:+"$full"})
     fi
+    # pane 이름 복원 — tmux 서버가 죽으면 @pname 도 같이 사라지므로 스냅샷에서 되살린다
+    [ -n "${pname:-}" ] && [ -n "$pid" ] && tmux set-option -p -t "$pid" @pname "$pname"
     made=$((made+1))
   done < <(grep '^PANE' "$SNAP")
   [ "$made" -gt 0 ] || return 1
@@ -105,10 +108,9 @@ done
 has_window "__boot__" && tmux kill-window -t "${SESSION}:__boot__" 2>/dev/null || true
 tmux move-window -r -t "$SESSION"
 
-tmux set-option -t "$SESSION" -g automatic-rename off
-tmux set-option -t "$SESSION" -g allow-rename off
-tmux set-option -t "$SESSION" -g pane-border-status top
-tmux set-option -t "$SESSION" -g pane-border-format ' #[fg=cyan,bold]#{b:pane_current_path}#[default] · #[fg=dim]#{pane_current_command}#[default] '
+# tmux 옵션은 여기서 건드리지 않는다 — SoT 는 tmux.conf 뿐.
+# (예전엔 pane-border-format 을 여기서 전역 덮어써서, 런처를 돌릴 때마다 상태 칩과 @pname 이
+#  사라졌다 — docs/incidents.md "설정의 SoT 가 둘이면 조용히 진다")
 
 [ "$FRESH" = "1" ] && resume_panes
 

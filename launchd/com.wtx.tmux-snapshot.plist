@@ -10,6 +10,12 @@
     <string>/bin/bash</string>
     <string>__WTX_HOME__/tmux/session-snapshot.sh</string>
   </array>
+  <!-- launchd 의 기본 PATH 에는 /opt/homebrew/bin 이 없다 → python 이 tmux 를 못 찾아
+       8일간 조용히 실패한 사고(2026-09-09). 수동 실행은 셸 PATH 라 멀쩡해서 안 들킨다. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>           <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
   <key>StartInterval</key>    <integer>600</integer>
   <key>RunAtLoad</key>        <false/>
   <key>Nice</key>             <integer>10</integer>

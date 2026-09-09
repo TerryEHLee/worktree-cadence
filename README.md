@@ -31,8 +31,10 @@
 4. **미러** — 메인 체크아웃은 작업하지 않는 참조본. `merge --ff-only` 라 갈라지면 거부만 한다.
 5. **멀티세션 안전장치** — sync 는 mkdir lock 으로 같은 워크트리의 다른 세션 tool 을
    잠깐 세우고(PreToolUse hook), tmux 배지가 pane 별 Claude 상태(진행/승인대기/완료)를 색으로 보여준다.
-6. **재부팅 복원** — 10분마다 tmux 배치 + pane 별 Claude 대화 ID 스냅샷.
+6. **재부팅 복원** — 10분마다 tmux 배치 + pane 별 Claude 대화 ID + pane 이름 스냅샷.
    `wtx` 한 번으로 화면 그대로 + 각 pane 의 대화(`claude --resume <id>`)까지 복귀.
+7. **dev 서버도 pane 에서** — 테두리 칩이 그 워크트리 dev 서버의 켜짐(⚡ 포트)/꺼짐/워커 누수를 보여주고,
+   `Ctrl+a s` 메뉴로 그 자리에서 켜고 끄고 로그를 본다. 포트 표 없음 — LISTEN 중인 프로세스의 cwd 로 귀속.
 
 왜 이런 규칙들인지는 [docs/incidents.md](docs/incidents.md) — 전부 실사고에서 나왔다.
 
@@ -73,11 +75,29 @@ source ~/.zshrc && wtx
 |:---|:---|
 | `config.example.sh` | **유일한 설정** — 레포·브랜치·tmux window. 이직 = 이 파일 수정이 전부 |
 | `setup.sh` | 새 맥 부트스트랩 (idempotent, 기존 설정 보존) |
-| `scripts/` | sync-trunk(lock+autostash) · sync-on-event(훅, throttle) · tool-lock-guard · sync-all-worktrees(수동 fan-out) · mirror-main-checkout(ff-only) · tmux-claude-badge |
+| `scripts/` | sync-trunk(lock+autostash) · sync-on-event(훅, throttle) · tool-lock-guard · sync-all-worktrees(수동 fan-out) · mirror-main-checkout(ff-only) · tmux-claude-badge · tmux-dev-server(칩+메뉴) |
 | `tmux/` | session-up(런처=`wtx`) · session-snapshot(=`wtx-save`, 10분 자동) · tmux.conf |
 | `launchd/` | mirror-sync(30분) · tmux-snapshot(10분) 템플릿 |
 | `claude/` | skills(branch·commit·push·merge·daily-report) · commands(sync) · settings-hooks.json · CLAUDE.md.template |
 | `docs/incidents.md` | 각 가드레일이 태어난 실사고 기록 |
+
+## tmux 화면 읽는 법
+
+pane 테두리 한 줄에 그 칼럼의 상태가 전부 있다: `4  411:매칭 자동화  ▸ 진행중  ⚡ 7777`
+
+| 칩 | 뜻 | 손 |
+|:---|:---|:---|
+| 파랑 `▸ 진행중` / 주황 `! 권한대기` / 초록 `✓ 완료` | 그 pane 의 Claude 상태 | 주황이면 승인, 초록이면 읽기 |
+| 민트 `⚡ 7777` / 회색 `○ dev` | 그 워크트리 dev 서버 LISTEN 포트 / 꺼짐 | `Ctrl+a s` → `s` 로 토글 |
+| 주황 `w12` | Next turbopack 이 흘린 postcss 워커 수 (8 초과) | `Ctrl+a s` → `w` 로 정리 |
+| window 이름 옆 `(1·2)` | 다른 window 에서 승인대기·완료가 몇 개인지 | 그 window 를 보면 사라짐 |
+
+| 키 | 동작 |
+|:---|:---|
+| `Ctrl+a n` | pane 이름 붙이기 (스냅샷에 저장, 재부팅 후 복원) |
+| `Ctrl+a s` | dev 서버 메뉴 — `s` 켜기/끄기 · `l` 로그 팝업(안에서 `Ctrl+a d` 로 닫기) · `w` 워커 정리 |
+| `Ctrl+a S` | tmux 세션 트리 (기본값을 대문자로 옮김) |
+| `Ctrl+a r` | tmux.conf 리로드 — 칩이 이상하면 이것부터 |
 
 ## 스킬 = 실행 가능한 프로세스 문서
 
@@ -93,6 +113,8 @@ source ~/.zshrc && wtx
 ## 원칙 요약
 
 - 환경값(포트 등)은 문서에 박지 않는다 — 런타임 도출 (표는 반드시 썩는다)
+- 설정의 SoT 는 한 곳 — tmux 옵션은 tmux.conf 만, 런처가 덮어쓰지 않는다
+- 자동화는 자동 경로로 검증한다 — 수동 실행 성공은 launchd 성공을 증명하지 않는다
 - 파괴적 명령으로 문제를 풀지 않는다 — reset --hard 대신 브랜치 보존 + ff-only
 - 자동화의 실패 방식이 안전한가부터 본다 — 갈라지면 "아무것도 안 하고 거부"가 최선
 - 규칙에는 사유(사고)를 함께 남긴다 — 사유 없는 규칙은 무너진다

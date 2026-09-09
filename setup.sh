@@ -61,6 +61,13 @@ for P in com.wtx.mirror-sync com.wtx.tmux-snapshot; do
   launchctl load "$DST"
   echo "✅ launchd 등록: $P"
 done
+# launchd 는 로그인 셸 PATH 를 모른다 — plist 에 박은 PATH 로 tmux/python3 가 잡히는지 여기서 확인.
+# (수동 실행이 되니 자동도 되겠지, 가 8일짜리 무음 실패를 만들었다 — docs/incidents.md)
+LPATH="$(/usr/libexec/PlistBuddy -c 'Print :EnvironmentVariables:PATH' "$HOME/Library/LaunchAgents/com.wtx.tmux-snapshot.plist" 2>/dev/null || echo /usr/bin:/bin)"
+for BIN in tmux python3; do
+  if PATH="$LPATH" command -v "$BIN" >/dev/null 2>&1; then echo "✅ launchd PATH 에서 $BIN 확인"
+  else echo "❌ launchd PATH($LPATH) 에서 $BIN 을 못 찾음 — plist 의 PATH 에 설치 경로를 추가할 것"; fi
+done
 
 # 6) Claude 훅 안내
 echo
@@ -70,3 +77,4 @@ echo "② claude/settings-hooks.json 의 hooks 를 ~/.claude/settings.json 에 �
 echo "   (__WTX_HOME__ → $WTX_SRC 로 치환해서)"
 echo "③ 프로젝트 레포에 claude/skills/* 복사 + CLAUDE.md.template 반영"
 echo "④ README '워크트리 만들기' 절차로 트렁크 생성 → wtx 로 tmux 기동"
+echo "⑤ 하루 지나면 launchctl list com.wtx.tmux-snapshot | grep LastExit 가 0 인지 한 번 확인"

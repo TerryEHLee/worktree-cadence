@@ -23,6 +23,12 @@ lsof 로도 안 잡힌다). 그래서 두 단계로 푼다.
        terry 의 앱개발(p2)과 겜개발(p3) 대화를 서로 뒤바꿔 배정했다.
 
   화면 시각을 못 읽은 pane 은 남은 대화 중 mtime 최신순으로 채운다(차선).
+
+  ⓪ (2026-09-09 추가, ①② 보다 우선) pane 의 claude 가 `--resume <id>` 로 떠 있으면 그 id 확정.
+     재부팅 복원으로 뜬 세션은 전부 이 꼴이라 추정이 필요 없다. 시각 매칭이 같은 cwd 의
+     pane 두 개를 서로 뒤바꾸는 것을 실측(2026-09-09)하고 도입 — 추정은 인자 없는 pane 에만.
+
+저장 v3: 8번째 열에 pane 이름(@pname). tmux 서버가 죽으면 이름도 사라지므로 같이 실어 복원.
 """
 import json, os, re, subprocess, sys, time
 from datetime import datetime, timezone, timedelta
@@ -86,15 +92,28 @@ def main():
     # args 의 **첫 토큰**이 claude 여야 한다. 줄 끝으로 판정하면 `claude --continue`
     # 로 떠 있는 pane 을 놓친다(실측: terryehlee·studio 가 통째로 빠졌다).
     claude_ttys = set()
+    resume_by_tty = {}        # tty → `--resume <id>` 인자 (확정값)
     for l in ps.splitlines():
         parts = l.split()
         if len(parts) >= 2 and parts[0].startswith("ttys") and os.path.basename(parts[1]) == "claude":
             claude_ttys.add(parts[0])
+            if "--resume" in parts[2:]:
+                i = parts.index("--resume")
+                if i + 1 < len(parts) and len(parts[i + 1]) >= 8:
+                    resume_by_tty[parts[0]] = parts[i + 1]
 
     windows = [l.split("\t") for l in tmux("list-windows", "-t", SESSION,
                                            "-F", "#{window_index}\t#{window_name}").splitlines() if l]
     panes = [l.split("\t") for l in tmux("list-panes", "-s", "-t", SESSION,
              "-F", "#{window_index}\t#{window_name}\t#{pane_index}\t#{pane_tty}\t#{pane_current_path}").splitlines() if l]
+
+    # pane 이름(@pname). 탭은 TSV 구분자라 제거.
+    pnames = {}
+    for l in tmux("list-panes", "-s", "-t", SESSION,
+                  "-F", "#{window_index}\t#{pane_index}\t#{@pname}").splitlines():
+        parts = l.split("\t")
+        if len(parts) >= 3 and parts[2].strip():
+            pnames[(parts[0], parts[1])] = parts[2].replace("\t", " ").strip()
 
     # cwd 별로 pane 을 묶는다
     groups = {}
@@ -118,6 +137,20 @@ def main():
 
         live = [m for m in members if running[(m[1], m[2])] == 1]
         if not live:
+            continue
+
+        # ⓪ `--resume <id>` 로 떠 있는 pane 은 그 id 그대로 (확정). 나머지만 ①②로 추정.
+        pinned = []
+        for m in live:
+            sid = resume_by_tty.get(m[3].replace("/dev/", ""))
+            if sid:
+                assigned[(m[1], m[2])] = sid
+                pinned.append(m)
+        if pinned:
+            pinned_ids = {assigned[(m[1], m[2])] for m in pinned}
+            files = [f for f in files if os.path.basename(f)[:-6] not in pinned_ids]
+            live = [m for m in live if m not in pinned]
+        if not live or not files:
             continue
 
         by_mtime = sorted(files, key=lambda p: os.path.getmtime(p), reverse=True)
@@ -160,7 +193,7 @@ def main():
 
     tmp = SNAP + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        f.write("# wtx session snapshot v2\n")
+        f.write("# wtx session snapshot v3\n")
         f.write(f"# saved\t{time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"# session\t{SESSION}\n")
         for widx, wname in windows:
@@ -168,7 +201,8 @@ def main():
         for widx, wname, pidx, ptty, cwd in panes:
             sid = assigned.get((wname, pidx), "-")
             run = running.get((wname, pidx), 0)
-            f.write(f"PANE\t{widx}\t{wname}\t{pidx}\t{cwd}\t{sid}\t{run}\n")
+            pname = pnames.get((widx, pidx), "")
+            f.write(f"PANE\t{widx}\t{wname}\t{pidx}\t{cwd}\t{sid}\t{run}\t{pname}\n")
     os.replace(tmp, SNAP)
 
     n_res = sum(1 for k in assigned)

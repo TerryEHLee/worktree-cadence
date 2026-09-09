@@ -121,6 +121,33 @@ case "$action" in
     ;;
 esac
 
+# ── 백그라운드 세션 양보 가드 ─────────────────────────────────────────────
+# 백그라운드 잡(데몬 아래 `--bg-pty-host`)은 제어 tty 가 없다. 그런데 데몬이 어느 pane 에서
+# 태어났으면 TMUX_PANE 을 물려받아 그 pane 을 칠한다 — 그 pane 에 대화형 Claude 가 이미
+# 붙어 있으면 두 세션이 한 pane 을 번갈아 덧칠해 칩이 사라졌다 나타났다 한다
+# (2026-09-08 manna 실측: 04b05a10 백그라운드 + 175661b3 대화형).
+#
+# ⚠️ 훅 프로세스 "자신" 의 tty 로 판정하면 안 된다 — 대화형 세션이 띄운 훅도 tty 가 없다(`??`).
+#    그래서 부모를 거슬러 올라가 tty 를 가진 조상(=대화형 claude)이 있는지 본다.
+#    대화형: hook → zsh(??) → claude(ttysNNN)   /   백그라운드: 전부 ?? 로 launchd 까지 닿는다.
+# 규칙: 조상 중 tty 를 가진 것이 하나도 없고, 대상 pane 의 tty 에 Claude 가 살아 있으면
+#       그 pane 은 그 Claude 의 것이다 — 아무것도 칠하지 않는다.
+# 위치: 상시 경로(PreToolUse 의 "이미 run" 조기 종료) 뒤에 두어 실제 전이 때만 비용을 낸다.
+_p=$$ _has_tty=0
+for _i in 1 2 3 4 5 6 7 8; do
+  _t=$(ps -o tty= -p "$_p" 2>/dev/null | tr -d ' ')
+  if [ -n "$_t" ] && [ "$_t" != "??" ]; then _has_tty=1; break; fi
+  _p=$(ps -o ppid= -p "$_p" 2>/dev/null | tr -d ' ')
+  { [ -z "$_p" ] || [ "$_p" -le 1 ]; } && break
+done
+if [ "$_has_tty" = 0 ]; then
+  _ptty=$(tmux display-message -p -t "$target" '#{pane_tty}' 2>/dev/null)
+  _ptty=${_ptty#/dev/}
+  if [ -n "$_ptty" ] && ps -t "$_ptty" -o args= 2>/dev/null | grep -qE '(^|/)claude( |$)|/claude/versions/'; then
+    exit 0
+  fi
+fi
+
 win=$(tmux display-message -p -t "$target" '#{window_id}' 2>/dev/null) || exit 0
 [ -n "$win" ] || exit 0
 

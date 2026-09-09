@@ -24,9 +24,18 @@ WTX_WINDOWS=(
 # 워크트리 아닌 자유 pane 윈도우 (개인 트랙 런치패드 등). 비우면 생성 안 함
 WTX_FREE_WINDOWS=( "personal:4" )   # "윈도우명:pane수" — cwd 는 WTX_CODES
 
-# ── 개발 서버 포트 ──────────────────────────────────────
+# ── 개발 서버 ────────────────────────────────────────────
 # 포트는 여기 적지 않는다. 각 워크트리의 .env 의 DEV_PORT 가 SoT 다.
 # (표를 문서·설정에 박으면 반드시 썩는다 — 실측으로 증명된 규칙)
+# pane 테두리의 ⚡ 칩도 하드코딩이 아니라 실제 LISTEN 중인 프로세스의 cwd 로 워크트리를 찾는다.
+#
+# Ctrl+a s 메뉴 "켜기" 가 <워크트리>-dev tmux 세션에서 실행할 명령. "창이름=명령" 을 | 로 나열.
+# 폴더명별 예외만 적고, 나머지는 WTX_DEV_DEFAULT.
+WTX_DEV_DEFAULT="dev=pnpm dev"
+WTX_DEV_START=(
+  "${WTX_PREFIX}studio:studio=pnpm dev:studio|profilier=pnpm --filter profilier dev"
+)
+WTX_DEV_LEAK_WARN=8                 # 워크트리당 .next/postcss.js 워커가 이 수를 넘으면 주황 wN 경고
 
 # ── 기타 ────────────────────────────────────────────────
 WTX_SYNC_THROTTLE=180               # 이벤트 sync 시 fetch 최소 간격(초)
